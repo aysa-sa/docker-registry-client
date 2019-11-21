@@ -120,8 +120,10 @@ class Entity:
     _url_template = None
     _methods_supported = None
 
-    def __init__(self, client):
+    def __init__(self, client, set_url=None, **kwargs):
         self.__client = client
+        if set_url is not None:
+            self.set_url(**set_url)
 
     @property
     def cli(self):
@@ -161,8 +163,11 @@ class IterEntity(Entity):
     _response_key = None
     _response_data = None
 
-    def __init__(self, client, items=None):
-        super().__init__(client)
+    def __init__(self, client, exp_filter=None, items=None, **kwargs):
+        super().__init__(client, **kwargs)
+        if isinstance(exp_filter, str):
+            exp_filter = re.compile(exp_filter, re.I)
+        self.__exp_filter = exp_filter
         self.__items = items
         self.__params = None
         self.set_params()
@@ -176,6 +181,10 @@ class IterEntity(Entity):
         return self._response_data
 
     @property
+    def exp_filter(self):
+        return self.__exp_filter
+
+    @property
     def params(self):
         return self.__params
 
@@ -186,27 +195,41 @@ class IterEntity(Entity):
             self.__params = {'n': self.__items}
         values and self.__params.update(values)
 
-    def test(self, *args, **kwargs):
+    def next(self, *args, **kwargs):
         response = self.request('GET', params=self.params, *args, **kwargs)
         body = response.json()
-
         if self.key not in body:
             raise RegistryError('La clave "{}" no se encuentra dentro de la '
                                 'respuesta.'.format(self.key))
-
         for item in body[self.key]:
+            if self.exp_filter and not self.exp_filter.match(item):
+                continue
             yield item
-
         link = response.headers.get('Link', None)
-
         if link is not None:
             link = link.partition(';')[0].rstrip('>')
             link = dict(parse.parse_qsl(parse.urlsplit(link).query))
             self.set_params(link)
-            yield from self.test(*args, **kwargs)
+            yield from self.next(*args, **kwargs)
+
+    def __next__(self):
+        return self.next()
+
+    def __iter__(self):
+        return self.next()
 
 
 class CatalogEntity(IterEntity):
     _url = '/_catalog'
     _response_key = 'repositories'
     _methods_supported = 'GET'
+
+
+class TagsEntity(IterEntity):
+    _url_template = '/{name}/tags/list'
+    _response_key = 'tags'
+    _methods_supported = 'GET'
+
+    def __init__(self, client, name, exp_filter=None, items=None, **kwargs):
+        kwargs.setdefault('set_url', {'name': name})
+        super().__init__(client, exp_filter, items, **kwargs)
