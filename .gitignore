@@ -102,3 +102,14 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# AySA
+_proto/
+_ignore/
+*.ignore
+*.ignore.py
+.idea
+.vscode
+.DS_*
+Thumbs.db
+*.sublime*
