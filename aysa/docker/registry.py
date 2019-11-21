@@ -9,12 +9,12 @@ import logging
 from requests.auth import HTTPBasicAuth
 from http import HTTPStatus
 from urllib import parse
+from functools import partial
 
 log = logging.getLogger(__name__)
 
 TAG_SEP = ':'
 REPO_SEP = '/'
-MANIFEST_VERSION = 'v2'
 
 MEDIA_TYPES = {
     'v1': 'application/vnd.docker.distribution.manifest.v1+json',
@@ -27,7 +27,9 @@ rx_schema = re.compile(r'^('
                        r'127\.0\.0\.1|'
                        r'[a-z0-9]([\w\-\.]*)\.local(?:host)?'
                        r')(?::\d{1,5})?$', re.I)
+
 rx_registry = re.compile(r'^[a-z0-9]([\w\-\.]*)(?::\d{1,5})?$', re.I)
+
 rx_repository = re.compile(r'^[a-z0-9][\w\-]*(?:[\w\-/]+)'
                            r'(?::[a-z0-9][\w\-./]*)?$', re.I)
 
@@ -118,6 +120,7 @@ class Registry:
 class Entity:
     _url = None
     _url_template = None
+    _headers = None
     _methods_supported = None
 
     def __init__(self, client, set_url=None, **kwargs):
@@ -138,6 +141,10 @@ class Entity:
         return self._url_template
 
     @property
+    def headers(self):
+        return self._headers
+
+    @property
     def methods_supported(self):
         return self._methods_supported or []
 
@@ -153,6 +160,8 @@ class Entity:
         if method not in self.methods_supported:
             raise RegistryError('Método "{}" no soportado para "{}".'
                                 .format(method, self.url))
+        if self.headers:
+            kwargs['headers'] = self.headers
         return self.cli.request(method, self.url, *args, **kwargs)
 
     def json(self, method, *args, **kwargs):
@@ -222,14 +231,68 @@ class IterEntity(Entity):
 class CatalogEntity(IterEntity):
     _url = '/_catalog'
     _response_key = 'repositories'
-    _methods_supported = 'GET'
+    _methods_supported = 'GET',
 
 
 class TagsEntity(IterEntity):
     _url_template = '/{name}/tags/list'
     _response_key = 'tags'
-    _methods_supported = 'GET'
+    _methods_supported = 'GET',
 
     def __init__(self, client, name, exp_filter=None, items=None, **kwargs):
-        kwargs.setdefault('set_url', {'name': name})
+        kwargs['set_url'] = {'name': name}
         super().__init__(client, exp_filter, items, **kwargs)
+
+
+class Manifest(Entity):
+    _url_template = '/{name}/manifests/{reference}'
+    _methods_supported = 'GET', 'PUT', 'DELETE'
+    _headers = {'Accept': MEDIA_TYPES['v2']}
+
+    def __init__(self, client, name, reference, **kwargs):
+        kwargs['set_url'] = {'name': name, 'reference': reference}
+        super().__init__(client, **kwargs)
+
+
+class FatManifest(Manifest):
+    _methods_supported = 'GET',
+    _headers = {'Accept': MEDIA_TYPES['v2f']}
+
+
+class Api(Registry):
+    def catalog(self, exp_filter=None, items=None, **kwargs):
+        return CatalogEntity(self, exp_filter, items, **kwargs)
+
+    def tags(self, name, exp_filter=None, items=None, **kwargs):
+        return TagsEntity(self, name, exp_filter, items, **kwargs)
+
+    def digest(self, name, reference, **kwargs):
+        r = self.get_manifest(name, reference, **kwargs)
+        return r.headers.get('Docker-Content-Digest', None)
+
+    def manifest(self, name, reference, fat=False, obj=False, **kwargs):
+        r = self.get_manifest(name, reference, fat, **kwargs).json()
+        return r if obj is False else r
+
+    def put_tag(self, name, reference, target, **kwargs):
+        manifest = self.get_manifest(name, reference, **kwargs)
+        return self.put_manifest(name, target, manifest)
+
+    def delete_tag(self, name, reference, **kwargs):
+        pass
+
+    def get_manifest(self, name, reference, fat=False, **kwargs):
+        return self._manifest(name, reference, fat)\
+                   .request('GET', **kwargs)
+
+    def put_manifest(self, name, reference, manifest, **kwargs):
+        return self._manifest(name, reference) \
+                   .request('PUT', json=manifest, **kwargs)
+
+    def delete_manifest(self, name, reference, **kwargs):
+        return self._manifest(name, reference) \
+                   .request('DELETE', **kwargs)
+
+    def _manifest(self, name, reference, fat=False, **kwargs):
+        clazz = Manifest if fat is False else FatManifest
+        return clazz(self, name, reference, **kwargs)
