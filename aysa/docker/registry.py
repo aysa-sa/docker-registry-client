@@ -431,6 +431,8 @@ class Manifest:
 class Api(Registry):
     """
     Docker Registry Api Client
+
+    >>> api = Api('localhost:5000', username='guest', password='guest')
     """
 
     def catalog(self, exp_filter=None, items=None, **kwargs):
