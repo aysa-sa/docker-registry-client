@@ -264,6 +264,12 @@ def _remove_registry(value):
 
 
 def get_registry(value):
+    """
+    Retorna el dominio(:puerto) de la registry.
+
+    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+        => aysa.ad:5000
+    """
     registry = rx_registry.match(value)
     if registry is not None:
         return registry.group()
@@ -271,10 +277,22 @@ def get_registry(value):
 
 
 def get_repository(value):
+    """
+    Retorna el nombre del repositorio.
+
+    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+        => namespace/sub_namespace/image
+    """
     return _remove_registry(value).rsplit(TAG_SEP, 1)[0]
 
 
 def get_namespace(value):
+    """
+    Retorna el nombre del espacio.
+
+    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+        => namespace/sub_namespace
+    """
     value = get_repository(value)
     if REPO_SEP not in value:
         return None
@@ -282,10 +300,22 @@ def get_namespace(value):
 
 
 def get_image(value):
+    """
+    Retorna el nombre de la imagen.
+
+    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+        => image
+    """
     return get_repository(value).rsplit(REPO_SEP, 1)[-1]
 
 
 def get_tag(value):
+    """
+    Retorna el nombre del tag.
+
+    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+        => tag
+    """
     value = _remove_registry(value)
     if TAG_SEP not in value:
         return None
@@ -399,10 +429,55 @@ class Manifest:
 
 
 class Api(Registry):
+    """
+    Docker Registry Api Client
+    """
+
     def catalog(self, exp_filter=None, items=None, **kwargs):
+        """
+        Retorna la lista con el catálogo de imágenes.
+
+        >>> api = Api('localhost:5000', True, username='demo', password='demo')
+
+        >>> # Retorna la lista completa de la imágenes.
+        >>> for x in api.catalog():
+        >>>     print(x)
+        image
+        ...
+
+        >>> # Retorna una lista filtrada por el "namesapce" => "project".
+        >>> for x in api.catalog(r'^project'):
+        >>>     print(x)
+        project
+        ...
+
+        >>> # Retorna una lista pagainada cada "2" items.
+        >>> for x in api.catalog(items=2):
+        >>>     print(x)
+        image
+        ...
+        """
         return CatalogEntity(self, exp_filter, items, **kwargs)
 
     def tags(self, name, exp_filter=None, items=None, **kwargs):
+        """
+        Retorna la lista con el catálogo de tags de una imagen.
+
+        >>> api = Api('localhost:5000', True, username='demo', password='demo')
+
+        >>> # Retorna la lista completa de tags de una imagen.
+        >>> for x in api.tags('image'):
+        >>>     print(x)
+        dev
+        ...
+
+        >>> # Recorre todo el catálogo de imágenes y tags.
+        >>> for x in api.catalog():
+        >>>     for y in api.tags(x):
+        >>>         print(x, y)
+        image dev
+        image ...
+        """
         return TagsEntity(self, name, exp_filter, items, **kwargs)
 
     def digest(self, name, reference, **kwargs):
