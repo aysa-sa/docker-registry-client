@@ -6,9 +6,9 @@
 import re
 import json
 import requests
-from requests.auth import HTTPBasicAuth
-from http import HTTPStatus
 from urllib import parse
+from http import HTTPStatus
+from requests.auth import HTTPBasicAuth
 
 TAG_SEP = ':'
 REPO_SEP = '/'
@@ -253,7 +253,7 @@ class ManifestEntity(Entity):
 
 class FatManifestEntity(ManifestEntity):
     _methods_supported = 'GET',
-    _headers = {'Accept': MEDIA_TYPES['v2f']}
+    headers = {'Accept': MEDIA_TYPES['v2f']}
 
 
 def _remove_registry(value):
