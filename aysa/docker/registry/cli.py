@@ -8,8 +8,9 @@ AySA / Docker Registry Api Client (cli)
 usage:
     aysar [options] COMMAND [ARGS...]
 
-Opcionales:
-    -y, --yes
+Comandos:
+    tag_list
+
 
 """
 
