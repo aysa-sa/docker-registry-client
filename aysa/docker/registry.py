@@ -437,22 +437,20 @@ class Api(Registry):
         """
         Retorna la lista con el catálogo de imágenes.
 
-        >>> api = Api('localhost:5000', True, username='demo', password='demo')
-
         >>> # Retorna la lista completa de la imágenes.
-        >>> for x in api.catalog():
+        >>> for x in Api(...).catalog():
         >>>     print(x)
         image
         ...
 
         >>> # Retorna una lista filtrada por el "namesapce" => "project".
-        >>> for x in api.catalog(r'^project'):
+        >>> for x in Api(...).catalog(r'^project'):
         >>>     print(x)
         project
         ...
 
         >>> # Retorna una lista pagainada cada "2" items.
-        >>> for x in api.catalog(items=2):
+        >>> for x in Api(...).catalog(items=2):
         >>>     print(x)
         image
         ...
@@ -463,15 +461,14 @@ class Api(Registry):
         """
         Retorna la lista con el catálogo de tags de una imagen.
 
-        >>> api = Api('localhost:5000', True, username='demo', password='demo')
-
         >>> # Retorna la lista completa de tags de una imagen.
-        >>> for x in api.tags('image'):
+        >>> for x in Api(...).tags('image'):
         >>>     print(x)
         dev
         ...
 
         >>> # Recorre todo el catálogo de imágenes y tags.
+        >>> api = Api(...)
         >>> for x in api.catalog():
         >>>     for y in api.tags(x):
         >>>         print(x, y)
