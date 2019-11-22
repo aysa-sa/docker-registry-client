@@ -4,14 +4,11 @@
 # ~
 
 import re
+import json
 import requests
-import logging
 from requests.auth import HTTPBasicAuth
 from http import HTTPStatus
 from urllib import parse
-from functools import partial
-
-log = logging.getLogger(__name__)
 
 TAG_SEP = ':'
 REPO_SEP = '/'
@@ -25,10 +22,10 @@ MEDIA_TYPES = {
 rx_schema = re.compile(r'^('
                        r'localhost|'
                        r'127\.0\.0\.1|'
-                       r'[a-z0-9]([\w\-\.]*)\.local(?:host)?'
+                       r'[a-z0-9]([\w\-.]*)\.local(?:host)?'
                        r')(?::\d{1,5})?$', re.I)
 
-rx_registry = re.compile(r'^[a-z0-9]([\w\-\.]*)(?::\d{1,5})?$', re.I)
+rx_registry = re.compile(r'^[a-z0-9]([\w\-.]*)(?::\d{1,5})?/', re.I)
 
 rx_repository = re.compile(r'^[a-z0-9][\w\-]*(?:[\w\-/]+)'
                            r'(?::[a-z0-9][\w\-./]*)?$', re.I)
@@ -259,6 +256,148 @@ class FatManifest(Manifest):
     _headers = {'Accept': MEDIA_TYPES['v2f']}
 
 
+def _remove_registry(value):
+    registry = get_registry(value)
+    if registry is not None:
+        value = value.replace(registry, '')
+    return value
+
+
+def get_registry(value):
+    registry = rx_registry.match(value)
+    if registry is not None:
+        return registry.group()
+    return None
+
+
+def get_repository(value):
+    return _remove_registry(value).rsplit(TAG_SEP, 1)[0]
+
+
+def get_namespace(value):
+    value = get_repository(value)
+    if REPO_SEP not in value:
+        return None
+    return value.rsplit(REPO_SEP, 1)[0]
+
+
+def get_image(value):
+    return get_repository(value).rsplit(REPO_SEP, 1)[-1]
+
+
+def get_tag(value):
+    value = _remove_registry(value)
+    if TAG_SEP not in value:
+        return None
+    return value.rsplit(TAG_SEP, 1)[-1]
+
+
+def get_parts(value):
+    """Formato del string: {url:port}/{namespace}/{repository}:{tag}"""
+    if not rx_repository.match(get_repository(value)):
+        raise RegistryError('El endpoint "{}" está mal formateado.'
+                            .format(value))
+    return {
+        'registry': get_registry(value).rstrip('/'),
+        'repository': get_repository(value),
+        'namespace': get_namespace(value),
+        'image': get_image(value),
+        'tag': get_tag(value),
+    }
+
+
+class Image:
+    def __init__(self, string):
+        self.__parts = get_parts(string)
+        self.__raw = string
+
+    @property
+    def registry(self):
+        return self.__parts['registry']
+
+    @property
+    def repository(self):
+        return self.__parts['repository']
+
+    @property
+    def namespace(self):
+        return self.__parts['namespace']
+
+    @property
+    def image(self):
+        return self.__parts['image']
+
+    @property
+    def tag(self):
+        return self.__parts['tag']
+
+    @property
+    def raw(self):
+        return self.__raw
+
+    @property
+    def parts(self):
+        return self.__parts
+
+    @property
+    def image_tag(self):
+        return '{}:{}'.format(self.image, self.tag)
+
+    @property
+    def repository_tag(self):
+        return '{}:{}'.format(self.repository, self.tag)
+
+    def __str__(self):
+        return self.raw
+
+    def __repr__(self):
+        return '<{registry} Namespace="{namespace}", Image="{image}", '\
+               'Tag="{tag}">'\
+               .format(**{k: v or '' for k, v in self.__parts.items()})
+
+    def __lt__(self, other):
+        return self.image < other.image
+
+    def __gt__(self, other):
+        return self.image > other.image
+
+
+class Manifest:
+    def __init__(self, raw):
+        self._raw = raw
+        self._history = None
+
+    @property
+    def name(self):
+        return self._raw.get('name', None)
+
+    @property
+    def tag(self):
+        return self._raw.get('tag', None)
+
+    @property
+    def layers(self):
+        return self._raw.get('fsLayers', self._raw.get('layers', None))
+
+    @property
+    def history(self):
+        try:
+            if self._history is None:
+                raw = self._raw['history'][0]['v1Compatibility']
+                self._history = json.loads(raw)
+            return self._history
+        except Exception:
+            return {}
+
+    @property
+    def created(self):
+        return self.history.get('created', None)
+
+    @property
+    def schema(self):
+        return self._raw.get('schemaVersion', None)
+
+
 class Api(Registry):
     def catalog(self, exp_filter=None, items=None, **kwargs):
         return CatalogEntity(self, exp_filter, items, **kwargs)
@@ -267,32 +406,33 @@ class Api(Registry):
         return TagsEntity(self, name, exp_filter, items, **kwargs)
 
     def digest(self, name, reference, **kwargs):
-        r = self.get_manifest(name, reference, **kwargs)
-        return r.headers.get('Docker-Content-Digest', None)
+        response = self.get_manifest(name, reference, **kwargs)
+        return response.headers.get('Docker-Content-Digest', None)
 
     def manifest(self, name, reference, fat=False, obj=False, **kwargs):
-        r = self.get_manifest(name, reference, fat, **kwargs).json()
-        return r if obj is False else r
+        response = self.get_manifest(name, reference, fat, **kwargs).json()
+        return Manifest(response) if obj is False else response
 
     def put_tag(self, name, reference, target, **kwargs):
         manifest = self.get_manifest(name, reference, **kwargs)
-        return self.put_manifest(name, target, manifest)
+        return self.put_manifest(name, target, manifest, **kwargs)
 
     def delete_tag(self, name, reference, **kwargs):
-        pass
+        digest = self.digest(name, reference, **kwargs)
+        return self.delete_manifest(name, digest, **kwargs)
 
     def get_manifest(self, name, reference, fat=False, **kwargs):
-        return self._manifest(name, reference, fat)\
+        return self._manifest(name, reference, fat, **kwargs)\
                    .request('GET', **kwargs)
 
     def put_manifest(self, name, reference, manifest, **kwargs):
-        return self._manifest(name, reference) \
+        return self._manifest(name, reference, **kwargs) \
                    .request('PUT', json=manifest, **kwargs)
 
     def delete_manifest(self, name, reference, **kwargs):
-        return self._manifest(name, reference) \
+        return self._manifest(name, reference, **kwargs) \
                    .request('DELETE', **kwargs)
 
     def _manifest(self, name, reference, fat=False, **kwargs):
-        clazz = Manifest if fat is False else FatManifest
-        return clazz(self, name, reference, **kwargs)
+        obj = Manifest if fat is False else FatManifest
+        return obj(self, name, reference, **kwargs)
