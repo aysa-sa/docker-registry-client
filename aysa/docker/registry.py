@@ -241,7 +241,7 @@ class TagsEntity(IterEntity):
         super().__init__(client, exp_filter, items, **kwargs)
 
 
-class Manifest(Entity):
+class ManifestEntity(Entity):
     _url_template = '/{name}/manifests/{reference}'
     _methods_supported = 'GET', 'PUT', 'DELETE'
     _headers = {'Accept': MEDIA_TYPES['v2']}
@@ -251,7 +251,7 @@ class Manifest(Entity):
         super().__init__(client, **kwargs)
 
 
-class FatManifest(Manifest):
+class FatManifestEntity(ManifestEntity):
     _methods_supported = 'GET',
     _headers = {'Accept': MEDIA_TYPES['v2f']}
 
@@ -437,23 +437,27 @@ class Api(Registry):
         """
         Retorna la lista con el catálogo de imágenes.
 
-        >>> # Retorna la lista completa de la imágenes.
+        >>> # retorna la lista completa de la imágenes.
         >>> for x in Api(...).catalog():
         >>>     print(x)
-        image
+        project/image
+        project1/image
+        project2/image
         ...
 
-        >>> # Retorna una lista filtrada por el "namesapce" => "project".
+        >>> # retorna una lista filtrada por el "namesapce" => "project".
         >>> for x in Api(...).catalog(r'^project'):
         >>>     print(x)
-        project
+        project/image
+        project/image1
+        project/image2
         ...
 
-        >>> # Retorna una lista pagainada cada "2" items.
+        >>> # retorna una lista pagainada cada "2" items.
         >>> for x in Api(...).catalog(items=2):
         >>>     print(x)
-        image
-        ...
+        project/image
+        project1/image
         """
         return CatalogEntity(self, exp_filter, items, **kwargs)
 
@@ -461,50 +465,76 @@ class Api(Registry):
         """
         Retorna la lista con el catálogo de tags de una imagen.
 
-        >>> # Retorna la lista completa de tags de una imagen.
+        >>> # retorna la lista completa de tags de una imagen.
         >>> for x in Api(...).tags('image'):
         >>>     print(x)
         dev
         ...
 
-        >>> # Recorre todo el catálogo de imágenes y tags.
+        >>> # recorre todo el catálogo de imágenes y tags.
         >>> api = Api(...)
         >>> for x in api.catalog():
         >>>     for y in api.tags(x):
         >>>         print(x, y)
-        image dev
-        image ...
+        project/image dev
+        project/image ...
         """
         return TagsEntity(self, name, exp_filter, items, **kwargs)
 
     def digest(self, name, reference, **kwargs):
+        """Retorna el "Docker-Content-Digest" de una image."""
         response = self.get_manifest(name, reference, **kwargs)
         return response.headers.get('Docker-Content-Digest', None)
 
     def manifest(self, name, reference, fat=False, obj=False, **kwargs):
+        """
+        Retorna el "Manifest" de una image en formato "json" u "object".
+
+        >>> # versión simple en formato "json"
+        >>> Api(...).manifest('project/image', 'dev')
+
+        >>> # versión completa en formato "json"
+        >>> Api(...).manifest('project/image', 'dev', True)
+
+        >>> # versión completa en formato "object"
+        >>> Api(...).manifest('project/image', 'dev', obj=True)
+        """
         response = self.get_manifest(name, reference, fat, **kwargs).json()
         return Manifest(response) if obj is False else response
 
     def put_tag(self, name, reference, target, **kwargs):
+        """Crea un alias de tag a partir de otro existente."""
         manifest = self.get_manifest(name, reference, **kwargs)
         return self.put_manifest(name, target, manifest, **kwargs)
 
     def delete_tag(self, name, reference, **kwargs):
+        """Elimina un tag específico."""
         digest = self.digest(name, reference, **kwargs)
         return self.delete_manifest(name, digest, **kwargs)
 
     def get_manifest(self, name, reference, fat=False, **kwargs):
+        """
+        Retorna un objeto response con el manifiesto.
+
+        >>> Api(...).get_manifest('project/image', 'dev')
+        <Response [200]>
+
+        >>> Api(...).get_manifest('project/image', 'dev').json()
+        {'schemaVersion': 2, 'mediaType': 'application/vnd.docker...
+        """
         return self._manifest(name, reference, fat, **kwargs)\
                    .request('GET', **kwargs)
 
     def put_manifest(self, name, reference, manifest, **kwargs):
+        """Crea un manifiesto específico."""
         return self._manifest(name, reference, **kwargs) \
                    .request('PUT', json=manifest, **kwargs)
 
     def delete_manifest(self, name, reference, **kwargs):
+        """Elimina un manifiesto específico."""
         return self._manifest(name, reference, **kwargs) \
                    .request('DELETE', **kwargs)
 
     def _manifest(self, name, reference, fat=False, **kwargs):
-        obj = Manifest if fat is False else FatManifest
+        obj = ManifestEntity if fat is False else FatManifestEntity
         return obj(self, name, reference, **kwargs)
