@@ -341,6 +341,8 @@ ex: aysa.ad:5000/namespace/sub_namespace/image:tag
 def get_parts(value):
 ```
 
+Retorna un diccionario con todas las partes que conforman el string.
+
 Formato del string: `{url:port}/{namespace}/{repository}:{tag}`
 
 ```python
