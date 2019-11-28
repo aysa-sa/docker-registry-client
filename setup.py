@@ -46,12 +46,6 @@ setup(
         'Programming Language :: Python :: 3.8'
     ],
 
-    entry_points={
-        'console_scripts': [
-            # 'aysar=registry.cli:main',
-        ],
-    },
-
     project_urls={
         'Bug Reports': registry.__issues__,
         'Source': registry.__uri__,

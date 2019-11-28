@@ -7,7 +7,6 @@ verify_ssl = false
 
 [packages]
 requests = "*"
-aysa_common = "https://github.com/aysa-sa/common/archive/master.zip"
 
 [requires]
 python_version = "3.8"
