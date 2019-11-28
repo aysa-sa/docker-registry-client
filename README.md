@@ -267,3 +267,90 @@ for x in api.catalog('^repository2'):
 # repository2/image1:tag
 # ...
 ```
+
+## Utils
+
+### get_registry
+
+```python
+def get_registry(value):
+```
+
+Retorna el dominio(:puerto) de la registry.
+
+```
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    => aysa.ad:5000
+```
+
+### get_repository
+
+```python
+def get_repository(value):
+```
+
+Retorna el nombre del repositorio.
+
+```
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    => namespace/sub_namespace/image
+```
+
+### get_namespace
+
+```python
+def get_namespace(value):
+```
+
+Retorna el nombre del espacio.
+
+```
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    => namespace/sub_namespace
+```
+
+### get_image
+
+```python
+def get_image(value):
+```
+
+Retorna el nombre de la imagen.
+
+```
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    => image
+```
+
+### get_tag
+
+```python
+def get_tag(value):
+```
+
+Retorna el nombre del tag.
+
+```
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    => tag
+```
+
+### get_parts
+
+```python
+def get_parts(value):
+```
+
+Formato del string: `{url:port}/{namespace}/{repository}:{tag}`
+
+```python
+return {
+    'registry': get_registry(value).rstrip('/'),
+    'repository': get_repository(value),
+    'namespace': get_namespace(value),
+    'image': get_image(value),
+    'tag': get_tag(value),
+}
+```
+
+
