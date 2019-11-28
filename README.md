@@ -88,10 +88,142 @@ Las dependencias se encuentran definidas en el archivo `Pipfile`, para la gesti�
 > pipenv lock --requirements > requirements.txt
 ```
 
+## Métodos
+
+### catalog
+
+```python
+def catalog(self, exp_filter=None, items=None, **kwargs):
+```
+
+Retorna una lista con el catálogo de imágenes.
+
+```python
+>>> # retorna la lista completa de la imágenes.
+>>> for x in Api(...).catalog():
+>>>     print(x)
+project/image
+project1/image
+project2/image
+...
+
+>>> # retorna una lista filtrada por el "namesapce" => "project".
+>>> for x in Api(...).catalog(r'^project'):
+>>>     print(x)
+project/image
+project/image1
+project/image2
+...
+
+>>> # retorna una lista pagainada cada "2" items.
+>>> for x in Api(...).catalog(items=2):
+>>>     print(x)
+project/image
+project1/image
+```
+
+### tags
+
+```python
+def tags(self, name, exp_filter=None, items=None, **kwargs):
+```
+
+Retorna una lista con el catálogo de tags de una imagen.
+
+```python
+>>> # retorna la lista completa de tags de una imagen.
+>>> for x in Api(...).tags('image'):
+>>>     print(x)
+dev
+...
+
+>>> # recorre todo el catálogo de imágenes y tags.
+>>> api = Api(...)
+>>> for x in api.catalog():
+>>>     for y in api.tags(x):
+>>>         print(x, y)
+project/image dev
+project/image ...
+```
+
+### digest
+
+```python
+def digest(self, name, reference, **kwargs):
+```
+
+Retorna el "Docker-Content-Digest" de una image.
+
+### manifest
+
+```python
+def manifest(self, name, reference, fat=False, obj=False, **kwargs):
+```
+
+Retorna el "Manifest" de una image en formato "json" u "object".
+
+```python
+>>> # versión simple en formato "json"
+>>> Api(...).manifest('project/image', 'dev')
+
+>>> # versión completa en formato "json"
+>>> Api(...).manifest('project/image', 'dev', True)
+
+>>> # versión completa en formato "object"
+>>> Api(...).manifest('project/image', 'dev', obj=True)
+```
+
+### put_tag
+
+```python
+def put_tag(self, name, reference, target, **kwargs):
+```
+
+Crea un alias de tag a partir de otro existente.
+
+### delete_tag
+
+```python
+def delete_tag(self, name, reference, **kwargs):
+```
+
+Elimina un tag específico.
+
+### get_manifest
+
+```python
+def get_manifest(self, name, reference, fat=False, **kwargs):
+```
+
+Retorna un objeto response con el manifiesto.
+
+```python
+>>> Api(...).get_manifest('project/image', 'dev')
+<Response [200]>
+
+>>> Api(...).get_manifest('project/image', 'dev').json()
+{'schemaVersion': 2, 'mediaType': 'application/vnd.docker...
+```
+
+### put_manifest
+
+```python
+def put_manifest(self, name, reference, manifest, **kwargs):
+```
+
+Crea un manifiesto específico.
+
+### delete_manifest
+
+```python
+def delete_manifest(self, name, reference, **kwargs):
+```
+
+Elimina un manifiesto específico.
 
 ## Ejemplo
 
-Recorremos el catálogo de imagágenes y sus respectivos tags:
+Reccoremos el catálogo de repositorios que provee la registry 'localhost:5000'.
 
 ```python
 from aysa.docker.registry import Api, Image

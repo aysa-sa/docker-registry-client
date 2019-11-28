@@ -437,7 +437,7 @@ class Api(Registry):
 
     def catalog(self, exp_filter=None, items=None, **kwargs):
         """
-        Retorna la lista con el catálogo de imágenes.
+        Retorna una lista con el catálogo de imágenes.
 
         >>> # retorna la lista completa de la imágenes.
         >>> for x in Api(...).catalog():
@@ -465,7 +465,7 @@ class Api(Registry):
 
     def tags(self, name, exp_filter=None, items=None, **kwargs):
         """
-        Retorna la lista con el catálogo de tags de una imagen.
+        Retorna una lista con el catálogo de tags de una imagen.
 
         >>> # retorna la lista completa de tags de una imagen.
         >>> for x in Api(...).tags('image'):
