@@ -1,4 +1,4 @@
-# AySA / Docker Registry Api Client
+# AySA / Docker Registry Api Client (v2019.11.22)
 
 Cliente para la API v2 de Docker Registry.
 
@@ -23,24 +23,24 @@ Se requiere la versión de `python` **>=3.6**, en adelante.
 > source ./bin/activate
 
 # instalamos dentro del entorno
-> pip install https://github.com/aysa-sa/docker-registry-client/archive/master.zip
+> pip install https://github.com/aysa-sa/docker-registry-client/archive/2019.11.22.zip
 ```
 
 ### Sin entorno virtual
 
 ```bash
 # Instalar
-> pip install https://github.com/aysa-sa/docker-registry-client/archive/master.zip
+> pip install https://github.com/aysa-sa/docker-registry-client/archive/2019.11.22.zip
 
 # Actualizar
-> pip install https://github.com/aysa-sa/docker-registry-client/archive/master.zip --upgrade
+> pip install https://github.com/aysa-sa/docker-registry-client/archive/2019.11.22.zip --upgrade
 ```
 
 ### Desde el código fuente
 
 ```bash
 # clonamos el repositorio
-> git clone https://github.com/aysa-sa/docker-registry-client.git
+> git clone https://github.com/aysa-sa/docker-registry-client.git --branch 2019.11.22 --single-branch 
 
 # ingresamos al directorio del repositorio
 > cd docker-registry-client
