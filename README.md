@@ -268,7 +268,7 @@ for x in api.catalog('^repository2'):
 # ...
 ```
 
-## Utils
+## Utilidades
 
 Utilidades para manipular el string de un repositorio.
 
