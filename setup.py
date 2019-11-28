@@ -6,7 +6,7 @@
 from os import path
 from io import open
 from setuptools import setup, find_packages
-from aysa.docker.registry import __version__ as registry
+import aysa.docker.registry.__version__ as registry
 
 here = path.abspath(path.dirname(__file__))
 
@@ -36,9 +36,7 @@ setup(
 
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Environment :: Console',
         'Intended Audience :: Developers',
-        'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
