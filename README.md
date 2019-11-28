@@ -223,7 +223,21 @@ Elimina un manifiesto específico.
 
 ## Ejemplo
 
-Reccoremos el catálogo de repositorios que provee la registry 'localhost:5000'.
+Recorremos el catálogo de repositorios que provee la registry `localhost:5000`.
+
+```javascript
+// GET http://localhost:5000/v2/_catalog
+{
+  "repositories": [
+    "repository1/image1",  
+    "repository1/image2",
+    "repository2/image1",
+    "repository3/image2"
+  ]
+}
+```
+
+Mediante la librería:
 
 ```python
 from aysa.docker.registry import Api, Image
