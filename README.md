@@ -87,3 +87,37 @@ Las dependencias se encuentran definidas en el archivo `Pipfile`, para la gesti�
 ```bash
 > pipenv lock --requirements > requirements.txt
 ```
+
+
+## Ejemplo
+
+Recorremos el catálogo de imagágenes y sus respectivos tags:
+
+```python
+from aysa.docker.registry import Api, Image
+
+# creamos una instancia de la api...
+api = Api('localhost:5000', username='guest', password='guest')
+
+# listamos todo el catálogo con sus respectivos tags...
+for x in api.catalog():
+    for y in api.tags(x):
+        i = Image('{}:{}'.format(x, y))
+        print(i)
+
+# Output:
+# repository1/image1:tag
+# repository1/image2:tag
+# repository2/image1:tag
+# ...
+
+# listamos sólo el repositorio "repository2"... 
+for x in api.catalog('^repository2'):
+    for y in api.tags(x):
+        i = Image('{}:{}'.format(x, y))
+        print(i)
+
+# Output:
+# repository2/image1:tag
+# ...
+```
