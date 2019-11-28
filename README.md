@@ -352,7 +352,7 @@ Retorna un diccionario con todas las partes que conforman el string.
 
 ```python
 return {
-    'registry': get_registry(value).rstrip('/'),
+    'registry': get_registry(value),
     'repository': get_repository(value),
     'namespace': get_namespace(value),
     'image': get_image(value),
