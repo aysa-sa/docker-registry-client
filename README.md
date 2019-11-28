@@ -270,6 +270,10 @@ for x in api.catalog('^repository2'):
 
 ## Utils
 
+Utilidades para manipular el string de un repositorio.
+
+Formato del string: `{url:port}/{namespace}/{repository}:{tag}`
+
 ### get_registry
 
 ```python
@@ -342,8 +346,6 @@ def get_parts(value):
 ```
 
 Retorna un diccionario con todas las partes que conforman el string.
-
-Formato del string: `{url:port}/{namespace}/{repository}:{tag}`
 
 ```python
 return {
