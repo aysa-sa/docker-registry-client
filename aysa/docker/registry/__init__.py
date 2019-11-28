@@ -267,11 +267,11 @@ def get_registry(value, strip=True):
     """
     Retorna el dominio(:puerto) de la registry.
 
-    ex: aysa.ad:5000/namespace/sub_namespace/image:tag (strip=True)
-        => aysa.ad:5000
+    ex: localhost:5000/namespace/sub_namespace/image:tag (strip=True)
+        => localhost:5000
 
-    ex: aysa.ad:5000/namespace/sub_namespace/image:tag (strip=False)
-        => aysa.ad:5000/
+    ex: localhost:5000/namespace/sub_namespace/image:tag (strip=False)
+        => localhost:5000/
     """
     registry = rx_registry.match(value)
     if registry is not None:
@@ -284,7 +284,7 @@ def get_repository(value):
     """
     Retorna el nombre del repositorio.
 
-    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    ex: localhost:5000/namespace/sub_namespace/image:tag
         => namespace/sub_namespace/image
     """
     return _remove_registry(value).rsplit(TAG_SEP, 1)[0]
@@ -294,7 +294,7 @@ def get_namespace(value):
     """
     Retorna el nombre del espacio.
 
-    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    ex: localhost:5000/namespace/sub_namespace/image:tag
         => namespace/sub_namespace
     """
     value = get_repository(value)
@@ -307,7 +307,7 @@ def get_image(value):
     """
     Retorna el nombre de la imagen.
 
-    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    ex: localhost:5000/namespace/sub_namespace/image:tag
         => image
     """
     return get_repository(value).rsplit(REPO_SEP, 1)[-1]
@@ -317,7 +317,7 @@ def get_tag(value):
     """
     Retorna el nombre del tag.
 
-    ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+    ex: localhost:5000/namespace/sub_namespace/image:tag
         => tag
     """
     value = _remove_registry(value)
