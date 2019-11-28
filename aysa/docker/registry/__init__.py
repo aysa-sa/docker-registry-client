@@ -257,13 +257,13 @@ class FatManifestEntity(ManifestEntity):
 
 
 def _remove_registry(value):
-    registry = get_registry(value)
+    registry = get_registry(value, False)
     if registry is not None:
         value = value.replace(registry, '')
     return value
 
 
-def get_registry(value):
+def get_registry(value, strip=True):
     """
     Retorna el dominio(:puerto) de la registry.
 
@@ -272,7 +272,8 @@ def get_registry(value):
     """
     registry = rx_registry.match(value)
     if registry is not None:
-        return registry.group()
+        r = registry.group()
+        return r if strip is False else r.rstrip('/')
     return None
 
 
@@ -328,7 +329,7 @@ def get_parts(value):
         raise RegistryError('El endpoint "{}" está mal formateado.'
                             .format(value))
     return {
-        'registry': get_registry(value).rstrip('/'),
+        'registry': get_registry(value),
         'repository': get_repository(value),
         'namespace': get_namespace(value),
         'image': get_image(value),

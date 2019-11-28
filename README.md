@@ -277,7 +277,7 @@ Formato del string: `{url:port}/{namespace}/{repository}:{tag}`
 ### get_registry
 
 ```python
-def get_registry(value):
+def get_registry(value, strip=True):
 ```
 
 Retorna el dominio(:puerto) de la registry.
