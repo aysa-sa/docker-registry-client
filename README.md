@@ -283,8 +283,11 @@ def get_registry(value, strip=True):
 Retorna el dominio(:puerto) de la registry.
 
 ```
-ex: aysa.ad:5000/namespace/sub_namespace/image:tag
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag (strip=True)
     => aysa.ad:5000
+        
+ex: aysa.ad:5000/namespace/sub_namespace/image:tag (strip=False)
+    => aysa.ad:5000/
 ```
 
 ### get_repository
